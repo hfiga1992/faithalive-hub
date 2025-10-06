@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
-import { Header } from "./Header";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,7 +44,17 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           ${isSidebarCollapsed ? "md:pl-20" : "md:pl-64"}
         `}
       >
-        <Header onMenuToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} />
+        {/* Mobile Menu Button */}
+        <div className="md:hidden sticky top-0 z-20 bg-background border-b border-border p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+        
         <main className="p-4 md:p-6 lg:p-8">
           {children}
         </main>
