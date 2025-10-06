@@ -47,6 +47,53 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string
+          event_type: string
+          id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           church_id: string | null
@@ -126,6 +173,38 @@ export type Database = {
           },
         ]
       }
+      ministry_roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          ministry_id: string
+          role_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          ministry_id: string
+          role_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          ministry_id?: string
+          role_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministry_roles_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           church_id: string | null
@@ -167,6 +246,57 @@ export type Database = {
           },
         ]
       }
+      schedules: {
+        Row: {
+          confirmed: boolean | null
+          created_at: string | null
+          event_id: string
+          id: string
+          ministry_id: string
+          notes: string | null
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confirmed?: boolean | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          ministry_id: string
+          notes?: string | null
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confirmed?: boolean | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          ministry_id?: string
+          notes?: string | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -190,6 +320,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_schedule_conflicts: {
+        Args: {
+          _event_date: string
+          _exclude_event_id?: string
+          _user_id: string
+        }
+        Returns: {
+          conflict_event_date: string
+          conflict_event_id: string
+          conflict_event_title: string
+          conflict_role: string
+        }[]
+      }
       get_user_church_id: {
         Args: { _user_id: string }
         Returns: string

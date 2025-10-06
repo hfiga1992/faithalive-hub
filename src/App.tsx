@@ -12,6 +12,7 @@ import UserRegister from "./pages/UserRegister";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import Ministries from "./pages/Ministries";
+import Events from "./pages/Events";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +54,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
                   <Ministries />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/events" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <Events />
                 </ProtectedRoute>
               } 
             />
