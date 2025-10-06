@@ -25,6 +25,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,69 +45,101 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, UserPlus, MoreVertical, Mail, Phone, MapPin, Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Search, UserPlus, MoreVertical, Mail, Phone, Edit, Trash2, Loader2, Upload } from "lucide-react";
+import { useState, useRef } from "react";
+import { useMembers } from "@/hooks/useMembers";
+import { useAuth } from "@/hooks/useAuth";
 
 const Members = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterRole, setFilterRole] = useState("all");
-  const [filterMinistry, setFilterMinistry] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const { church } = useAuth();
+  const {
+    members,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    isLoading,
+    filters,
+    setFilters,
+    createMember,
+    updateMember,
+    deleteMember,
+    uploadPhoto,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useMembers();
 
-  // Mock data
-  const members = [
-    {
-      id: 1,
-      name: "Ana Carolina Santos",
-      email: "ana.santos@email.com",
-      phone: "(11) 98765-4321",
-      role: "Membro",
-      ministry: "Louvor",
-      status: "active",
-      avatar: "",
-    },
-    {
-      id: 2,
-      name: "Carlos Eduardo Lima",
-      email: "carlos.lima@email.com",
-      phone: "(11) 97654-3210",
-      role: "Líder",
-      ministry: "Jovens",
-      status: "active",
-      avatar: "",
-    },
-    {
-      id: 3,
-      name: "Mariana Oliveira",
-      email: "mariana.oliveira@email.com",
-      phone: "(11) 96543-2109",
-      role: "Ministro",
-      ministry: "Recepção",
-      status: "active",
-      avatar: "",
-    },
-    {
-      id: 4,
-      name: "Pedro Henrique Costa",
-      email: "pedro.costa@email.com",
-      phone: "(11) 95432-1098",
-      role: "Membro",
-      ministry: "Multimídia",
-      status: "active",
-      avatar: "",
-    },
-    {
-      id: 5,
-      name: "Juliana Ferreira",
-      email: "juliana.ferreira@email.com",
-      phone: "(11) 94321-0987",
-      role: "Visitante",
-      ministry: "-",
-      status: "inactive",
-      avatar: "",
-    },
-  ];
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    role: "",
+  });
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!church?.id) return;
+
+    try {
+      let photoUrl = "";
+      
+      // Upload photo if selected
+      if (photoFile) {
+        // Create a temporary user ID for the photo
+        const tempId = `temp-${Date.now()}`;
+        photoUrl = await uploadPhoto(photoFile, tempId);
+      }
+
+      createMember({
+        ...formData,
+        church_id: church.id,
+        photo_url: photoUrl,
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        phone: "",
+        role: "",
+      });
+      setPhotoFile(null);
+      setPhotoPreview("");
+      setIsAddMemberOpen(false);
+    } catch (error) {
+      console.error("Error creating member:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (memberToDelete) {
+      deleteMember(memberToDelete);
+      setMemberToDelete(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     return status === "active" ? (
@@ -149,140 +191,125 @@ const Members = () => {
                 </DialogDescription>
               </DialogHeader>
 
-              <Tabs defaultValue="personal" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
-                  <TabsTrigger value="contact">Contato</TabsTrigger>
-                  <TabsTrigger value="church">Igreja</TabsTrigger>
-                </TabsList>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                {/* Photo Upload */}
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={photoPreview} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {formData.name?.split(" ").map(n => n[0]).join("") || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoSelect}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Foto
+                  </Button>
+                </div>
 
-                <TabsContent value="personal" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nome</Label>
-                      <Input id="firstName" placeholder="João" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Sobrenome</Label>
-                      <Input id="lastName" placeholder="Silva" />
-                    </div>
-                  </div>
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Completo *</Label>
+                  <Input
+                    id="name"
+                    placeholder="João da Silva"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="birthDate">Data de Nascimento</Label>
-                    <Input id="birthDate" type="date" />
-                  </div>
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <Input id="cpf" placeholder="000.000.000-00" />
-                  </div>
+                {/* Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">Gênero</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="male">Masculino</SelectItem>
-                        <SelectItem value="female">Feminino</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </TabsContent>
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    placeholder="(11) 99999-9999"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
 
-                <TabsContent value="contact" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" placeholder="email@exemplo.com" />
-                  </div>
+                {/* Role */}
+                <div className="space-y-2">
+                  <Label htmlFor="role">Perfil *</Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) => setFormData({ ...formData, role: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o perfil" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="MEMBER">Membro</SelectItem>
+                      <SelectItem value="MINISTER">Ministro</SelectItem>
+                      <SelectItem value="LEADER">Líder</SelectItem>
+                      <SelectItem value="PASTOR">Pastor</SelectItem>
+                      <SelectItem value="VISITOR">Visitante</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" placeholder="(11) 99999-9999" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp">WhatsApp</Label>
-                      <Input id="whatsapp" placeholder="(11) 99999-9999" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" placeholder="Rua, número" />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input id="city" placeholder="São Paulo" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state">Estado</Label>
-                      <Input id="state" placeholder="SP" maxLength={2} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cep">CEP</Label>
-                      <Input id="cep" placeholder="00000-000" />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="church" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Perfil</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o perfil" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="member">Membro</SelectItem>
-                        <SelectItem value="minister">Ministro</SelectItem>
-                        <SelectItem value="leader">Líder</SelectItem>
-                        <SelectItem value="pastor">Pastor</SelectItem>
-                        <SelectItem value="visitor">Visitante</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="ministry">Ministério</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o ministério" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="louvor">Louvor</SelectItem>
-                        <SelectItem value="recepcao">Recepção</SelectItem>
-                        <SelectItem value="multimidia">Multimídia</SelectItem>
-                        <SelectItem value="jovens">Jovens</SelectItem>
-                        <SelectItem value="infantil">Infantil</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="baptismDate">Data do Batismo</Label>
-                    <Input id="baptismDate" type="date" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="joinDate">Data de Entrada</Label>
-                    <Input id="joinDate" type="date" />
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button className="bg-gradient-spiritual hover:opacity-90">
-                  Salvar Membro
-                </Button>
-              </div>
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddMemberOpen(false)}
+                    disabled={isCreating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Salvar Membro"
+                    )}
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -300,13 +327,16 @@ const Members = () => {
                 <Input
                   placeholder="Buscar membro..."
                   className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={filters.search || ""}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
                 />
               </div>
 
               {/* Role Filter */}
-              <Select value={filterRole} onValueChange={setFilterRole}>
+              <Select 
+                value={filters.role || "all"} 
+                onValueChange={(value) => setFilters({ ...filters, role: value, page: 1 })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os perfis" />
                 </SelectTrigger>
@@ -320,8 +350,11 @@ const Members = () => {
                 </SelectContent>
               </Select>
 
-              {/* Ministry Filter */}
-              <Select value={filterMinistry} onValueChange={setFilterMinistry}>
+              {/* Ministry Filter - Placeholder for now */}
+              <Select 
+                value={filters.ministry || "all"} 
+                onValueChange={(value) => setFilters({ ...filters, ministry: value, page: 1 })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os ministérios" />
                 </SelectTrigger>
@@ -335,7 +368,10 @@ const Members = () => {
               </Select>
 
               {/* Status Filter */}
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <Select 
+                value={filters.status || "all"} 
+                onValueChange={(value) => setFilters({ ...filters, status: value, page: 1 })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
@@ -352,97 +388,141 @@ const Members = () => {
         {/* Members Table */}
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[250px]">Membro</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Perfil</TableHead>
-                    <TableHead>Ministério</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {members.map((member) => (
-                    <TableRow
-                      key={member.id}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={member.avatar} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {member.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold">{member.name}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {member.phone}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Mail className="h-4 w-4" />
-                          {member.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getRoleBadge(member.role)}</TableCell>
-                      <TableCell>
-                        <span className="text-sm">{member.ministry}</span>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(member.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover z-50">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : members.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Nenhum membro encontrado</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[250px]">Membro</TableHead>
+                      <TableHead>Perfil</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {members.map((member) => (
+                      <TableRow
+                        key={member.id}
+                        className="hover:bg-muted/50 transition-colors"
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={member.photo_url || ""} />
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {member.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold">{member.name}</p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {member.phone || "Sem telefone"}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getRoleBadge(member.roles?.[0] || 'MEMBER')}</TableCell>
+                        <TableCell>{getStatusBadge(member.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" disabled={isDeleting}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover z-50">
+                              <DropdownMenuItem>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setMemberToDelete(member.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Pagination */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Mostrando <span className="font-medium">1-5</span> de{" "}
-            <span className="font-medium">5</span> membros
+            Mostrando{" "}
+            <span className="font-medium">
+              {members.length > 0 ? (page - 1) * pageSize + 1 : 0}-
+              {Math.min(page * pageSize, total)}
+            </span>{" "}
+            de <span className="font-medium">{total}</span> membros
           </p>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm" disabled>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1 || isLoading}
+              onClick={() => setFilters({ ...filters, page: page - 1 })}
+            >
               Anterior
             </Button>
-            <Button variant="outline" size="sm" disabled>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || isLoading}
+              onClick={() => setFilters({ ...filters, page: page + 1 })}
+            >
               Próximo
             </Button>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!memberToDelete} onOpenChange={() => setMemberToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover este membro? Esta ação marcará o membro como inativo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Removendo...
+                  </>
+                ) : (
+                  "Remover"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
