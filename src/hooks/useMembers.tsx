@@ -97,71 +97,29 @@ export const useMembers = () => {
         throw new Error("Você não tem permissão para criar membros");
       }
 
-      // Check if email already exists
-      const { data: existingUser } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("church_id", memberData.church_id)
-        .limit(1)
-        .single();
-
-      // Validate only 1 PASTOR per church
-      if (memberData.role === 'PASTOR') {
-        const { data: existingPastor } = await supabase
-          .from("user_roles")
-          .select(`
-            user_id,
-            profiles!inner(church_id)
-          `)
-          .eq('role', 'PASTOR')
-          .eq('profiles.church_id', memberData.church_id)
-          .limit(1);
-
-        if (existingPastor && existingPastor.length > 0) {
-          throw new Error("Já existe um Pastor cadastrado nesta igreja");
-        }
+      // Call edge function to create member without auto-login
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        throw new Error("Sessão inválida");
       }
 
-      // Create auth user
-      const redirectUrl = `${window.location.origin}/dashboard`;
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: memberData.email,
-        password: memberData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            name: memberData.name,
-            church_id: memberData.church_id,
-          },
+      const response = await supabase.functions.invoke('create-member', {
+        body: memberData,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (authError) throw authError;
-
-      // Add role
-      if (authData.user) {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert([{
-            user_id: authData.user.id,
-            role: memberData.role as 'PASTOR' | 'LEADER' | 'MINISTER' | 'MEMBER' | 'VISITOR',
-          }]);
-
-        if (roleError) throw roleError;
-
-        // Update profile with additional data
-        if (memberData.phone || memberData.photo_url) {
-          await supabase
-            .from("profiles")
-            .update({
-              phone: memberData.phone,
-              photo_url: memberData.photo_url,
-            })
-            .eq("id", authData.user.id);
-        }
+      if (response.error) {
+        throw new Error(response.error.message || "Erro ao criar membro");
       }
 
-      return authData.user;
+      if (!response.data.success) {
+        throw new Error(response.data.error || "Erro ao criar membro");
+      }
+
+      return response.data.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
