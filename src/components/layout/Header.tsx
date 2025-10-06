@@ -1,4 +1,4 @@
-import { Bell, Moon, Sun, Menu } from "lucide-react";
+import { Bell, Moon, Sun, Menu, User, Settings, LogOut, Church } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,18 +11,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfiles";
 
 interface HeaderProps {
   churchName?: string;
   onMenuToggle?: () => void;
 }
 
-export const Header = ({ churchName = "Igreja Batista Central", onMenuToggle }: HeaderProps) => {
+export const Header = ({ onMenuToggle }: HeaderProps) => {
   const [isDark, setIsDark] = useState(false);
+  const { user, church, profile, signOut } = useAuth();
+  const churchName = church?.name || "FaithAlive";
 
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle("dark");
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   // Mock notifications
@@ -31,12 +39,6 @@ export const Header = ({ churchName = "Igreja Batista Central", onMenuToggle }: 
     { id: 2, title: "Evento criado: Culto de Jovens", time: "1h atrás" },
     { id: 3, title: "Escala atualizada", time: "2h atrás" },
   ];
-
-  const user = {
-    name: "Pastor João Silva",
-    email: "pastor@igreja.com",
-    avatar: "",
-  };
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -103,9 +105,9 @@ export const Header = ({ churchName = "Igreja Batista Central", onMenuToggle }: 
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={profile?.photo_url || ""} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user.name.split(" ").map(n => n[0]).join("")}
+                    {profile?.name?.split(" ").map(n => n[0]).join("") || user?.email?.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -113,15 +115,22 @@ export const Header = ({ churchName = "Igreja Batista Central", onMenuToggle }: 
             <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <p className="text-sm font-medium">{profile?.name || user?.email}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Meu Perfil</DropdownMenuItem>
-              <DropdownMenuItem>Configurações</DropdownMenuItem>
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                Meu Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

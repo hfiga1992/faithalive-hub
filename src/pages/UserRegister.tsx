@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,14 @@ import {
   Users,
   Mic,
   UserCircle,
-  UserPlus
+  UserPlus,
+  Building2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useChurches } from "@/hooks/useChurches";
 
-type UserRole = "pastor" | "leader" | "minister" | "member" | "visitor";
+type UserRole = "PASTOR" | "LEADER" | "MINISTER" | "MEMBER" | "VISITOR";
 
 interface RoleOption {
   value: UserRole;
@@ -29,10 +33,13 @@ interface RoleOption {
 }
 
 const UserRegister = () => {
+  const navigate = useNavigate();
+  const { data: churches, isLoading: churchesLoading } = useChurches();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedChurch, setSelectedChurch] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole | "">("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -40,31 +47,31 @@ const UserRegister = () => {
 
   const roleOptions: RoleOption[] = [
     {
-      value: "pastor",
+      value: "PASTOR",
       label: "Pastor",
       description: "Líder principal da igreja com acesso total",
       icon: <Crown className="h-5 w-5" />,
     },
     {
-      value: "leader",
+      value: "LEADER",
       label: "Líder",
       description: "Coordena ministérios e grupos específicos",
       icon: <Users className="h-5 w-5" />,
     },
     {
-      value: "minister",
+      value: "MINISTER",
       label: "Ministro",
       description: "Atua em ministérios e serviços da igreja",
       icon: <Mic className="h-5 w-5" />,
     },
     {
-      value: "member",
+      value: "MEMBER",
       label: "Membro",
       description: "Membro ativo da comunidade",
       icon: <UserCircle className="h-5 w-5" />,
     },
     {
-      value: "visitor",
+      value: "VISITOR",
       label: "Visitante",
       description: "Primeira visita ou conhecendo a igreja",
       icon: <UserPlus className="h-5 w-5" />,
@@ -94,6 +101,10 @@ const UserRegister = () => {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
 
+    if (!selectedChurch) {
+      newErrors.church = "Selecione uma igreja";
+    }
+
     if (!selectedRole) {
       newErrors.role = "Selecione um perfil";
     }
@@ -109,11 +120,47 @@ const UserRegister = () => {
 
     setIsLoading(true);
 
-    // Simulação de cadastro
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name,
+            church_id: selectedChurch,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Add user role
+      if (data.user && selectedRole) {
+        await supabase
+          .from("user_roles")
+          .insert({
+            user_id: data.user.id,
+            role: selectedRole,
+          });
+      }
+
       setIsSuccess(true);
-    }, 2000);
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Verifique seu email para confirmar o cadastro.",
+      });
+    } catch (error: any) {
+      console.error("Error registering user:", error);
+      toast({
+        title: "Erro ao cadastrar",
+        description: error.message || "Ocorreu um erro ao cadastrar. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSuccess) {
@@ -213,6 +260,41 @@ const UserRegister = () => {
                 </div>
                 {errors.role && (
                   <p className="text-sm text-destructive animate-fade-in">{errors.role}</p>
+                )}
+              </div>
+
+              {/* Seleção de Igreja */}
+              <div className="space-y-2">
+                <Label htmlFor="church">Igreja</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-3 h-5 w-5 text-muted-foreground z-10" />
+                  <Select value={selectedChurch} onValueChange={setSelectedChurch}>
+                    <SelectTrigger 
+                      className={`h-11 pl-10 ${errors.church ? 'border-destructive' : ''}`}
+                    >
+                      <SelectValue placeholder="Selecione sua igreja" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {churchesLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Carregando igrejas...
+                        </SelectItem>
+                      ) : churches && churches.length > 0 ? (
+                        churches.map((church) => (
+                          <SelectItem key={church.id} value={church.id}>
+                            {church.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          Nenhuma igreja cadastrada
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {errors.church && (
+                  <p className="text-sm text-destructive animate-fade-in">{errors.church}</p>
                 )}
               </div>
 

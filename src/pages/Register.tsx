@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Church, ArrowLeft, ArrowRight, Building2, MapPin, Phone, User, Mail, Lock, CheckCircle2, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const Register = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -103,11 +106,61 @@ const Register = () => {
     
     setIsLoading(true);
     
-    // Simulação de cadastro
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // 1. Create church first
+      const { data: churchData, error: churchError } = await supabase
+        .from("churches")
+        .insert({
+          name: churchName,
+          address: churchAddress,
+          phone: churchPhone,
+        })
+        .select()
+        .single();
+
+      if (churchError) throw churchError;
+
+      // 2. Sign up pastor user
+      const redirectUrl = `${window.location.origin}/dashboard`;
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: pastorEmail,
+        password: pastorPassword,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name: pastorName,
+            church_id: churchData.id,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      // 3. Assign PASTOR role (will be done by trigger automatically, but we can add it here for clarity)
+      if (authData.user) {
+        await supabase
+          .from("user_roles")
+          .insert({
+            user_id: authData.user.id,
+            role: 'PASTOR',
+          });
+      }
+
       setIsSuccess(true);
-    }, 2000);
+      toast({
+        title: "Igreja cadastrada com sucesso!",
+        description: "Verifique seu email para confirmar o cadastro.",
+      });
+    } catch (error: any) {
+      console.error("Error registering church:", error);
+      toast({
+        title: "Erro ao cadastrar",
+        description: error.message || "Ocorreu um erro ao cadastrar a igreja. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSuccess) {
