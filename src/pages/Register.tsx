@@ -42,8 +42,8 @@ const Register = () => {
     if (!churchAddress.trim()) newErrors.churchAddress = "Endereço é obrigatório";
     if (!churchPhone.trim()) {
       newErrors.churchPhone = "Telefone é obrigatório";
-    } else if (!/^\(\d{2}\)\s?\d{4,5}-?\d{4}$/.test(churchPhone)) {
-      newErrors.churchPhone = "Telefone inválido. Use (XX) XXXXX-XXXX";
+    } else if (!/^\d{10,11}$/.test(churchPhone.replace(/\D/g, ''))) {
+      newErrors.churchPhone = "Telefone inválido. Digite apenas números (10 ou 11 dígitos)";
     }
     
     setErrors(newErrors);
@@ -270,7 +270,7 @@ const Register = () => {
                     <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="churchPhone"
-                      placeholder="(11) 99999-9999"
+                      placeholder="11999999999 ou (11) 99999-9999"
                       className={`h-11 pl-10 ${errors.churchPhone ? 'border-destructive' : ''}`}
                       value={churchPhone}
                       onChange={(e) => setChurchPhone(e.target.value)}
