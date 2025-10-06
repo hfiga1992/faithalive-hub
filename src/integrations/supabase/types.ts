@@ -297,6 +297,97 @@ export type Database = {
           },
         ]
       }
+      song_history: {
+        Row: {
+          event_id: string | null
+          id: string
+          key_used: string | null
+          played_at: string | null
+          song_id: string | null
+          worship_set_id: string | null
+        }
+        Insert: {
+          event_id?: string | null
+          id?: string
+          key_used?: string | null
+          played_at?: string | null
+          song_id?: string | null
+          worship_set_id?: string | null
+        }
+        Update: {
+          event_id?: string | null
+          id?: string
+          key_used?: string | null
+          played_at?: string | null
+          song_id?: string | null
+          worship_set_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_history_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_history_worship_set_id_fkey"
+            columns: ["worship_set_id"]
+            isOneToOne: false
+            referencedRelation: "worship_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      songs: {
+        Row: {
+          artist: string | null
+          bpm: number | null
+          chords: string | null
+          church_id: string
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          lyrics: string | null
+          original_key: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          artist?: string | null
+          bpm?: number | null
+          chords?: string | null
+          church_id: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lyrics?: string | null
+          original_key?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          artist?: string | null
+          bpm?: number | null
+          chords?: string | null
+          church_id?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          lyrics?: string | null
+          original_key?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -314,6 +405,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      worship_sets: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          created_by: string | null
+          event_id: string | null
+          id: string
+          notes: string | null
+          songs_order: Json | null
+          status: string | null
+          title: string
+          total_duration: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          songs_order?: Json | null
+          status?: string | null
+          title: string
+          total_duration?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          songs_order?: Json | null
+          status?: string | null
+          title?: string
+          total_duration?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worship_sets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
