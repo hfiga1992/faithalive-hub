@@ -14,6 +14,7 @@ import Members from "./pages/Members";
 import Ministries from "./pages/Ministries";
 import Events from "./pages/Events";
 import Worship from "./pages/Worship";
+import Announcements from "./pages/Announcements";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -71,6 +72,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER', 'MINISTER']}>
                   <Worship />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/announcements" 
+              element={
+                <ProtectedRoute>
+                  <Announcements />
                 </ProtectedRoute>
               } 
             />

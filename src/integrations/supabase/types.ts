@@ -14,6 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_views: {
+        Row: {
+          announcement_id: string | null
+          id: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          announcement_id?: string | null
+          id?: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          announcement_id?: string | null
+          id?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_views_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          category: string
+          church_id: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_pinned: boolean | null
+          is_public: boolean | null
+          is_urgent: boolean | null
+          ministry_id: string | null
+          publish_at: string | null
+          target_profiles: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          church_id: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean | null
+          is_public?: boolean | null
+          is_urgent?: boolean | null
+          ministry_id?: string | null
+          publish_at?: string | null
+          target_profiles?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          church_id?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean | null
+          is_public?: boolean | null
+          is_urgent?: boolean | null
+          ministry_id?: string | null
+          publish_at?: string | null
+          target_profiles?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       churches: {
         Row: {
           address: string | null
