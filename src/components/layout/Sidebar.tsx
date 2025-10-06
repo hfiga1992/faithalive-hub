@@ -8,6 +8,7 @@ import {
   Megaphone, 
   BarChart3,
   ListChecks,
+  ClipboardCheck,
   Church,
   LogOut,
   ChevronLeft,
@@ -24,9 +25,9 @@ const menuItems = [
   { icon: Users, label: "Membros", path: "/members" },
   { icon: Layers, label: "Ministérios", path: "/ministries" },
   { icon: Calendar, label: "Eventos", path: "/events" },
-  { icon: ListChecks, label: "Escalas", path: "/schedules" },
   { icon: Music, label: "Louvor", path: "/worship" },
   { icon: Megaphone, label: "Anúncios", path: "/announcements" },
+  { icon: ClipboardCheck, label: "Presença", path: "/attendance" },
   { icon: BarChart3, label: "Relatórios", path: "/reports" },
 ];
 

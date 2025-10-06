@@ -108,6 +108,83 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          notes: string | null
+          recorded_at: string | null
+          recorded_by: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_stats: {
+        Row: {
+          active_members: number | null
+          average_attendance: number | null
+          church_id: string
+          created_at: string | null
+          events_count: number | null
+          id: string
+          new_members: number | null
+          stat_date: string
+          total_members: number | null
+        }
+        Insert: {
+          active_members?: number | null
+          average_attendance?: number | null
+          church_id: string
+          created_at?: string | null
+          events_count?: number | null
+          id?: string
+          new_members?: number | null
+          stat_date: string
+          total_members?: number | null
+        }
+        Update: {
+          active_members?: number | null
+          average_attendance?: number | null
+          church_id?: string
+          created_at?: string | null
+          events_count?: number | null
+          id?: string
+          new_members?: number | null
+          stat_date?: string
+          total_members?: number | null
+        }
+        Relationships: []
+      }
       churches: {
         Row: {
           address: string | null
@@ -555,6 +632,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_church_stats: {
+        Args: { _church_id: string; _stat_date: string }
+        Returns: undefined
+      }
       check_schedule_conflicts: {
         Args: {
           _event_date: string

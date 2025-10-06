@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { DashboardLayout } from "./components/layout/DashboardLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -15,6 +16,8 @@ import Ministries from "./pages/Ministries";
 import Events from "./pages/Events";
 import Worship from "./pages/Worship";
 import Announcements from "./pages/Announcements";
+import Reports from "./pages/Reports";
+import Attendance from "./pages/Attendance";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -39,7 +42,7 @@ const App = () => (
               path="/dashboard" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <DashboardLayout><Dashboard /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -47,7 +50,7 @@ const App = () => (
               path="/members" 
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
-                  <Members />
+                  <DashboardLayout><Members /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -55,7 +58,7 @@ const App = () => (
               path="/ministries" 
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
-                  <Ministries />
+                  <DashboardLayout><Ministries /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -63,7 +66,7 @@ const App = () => (
               path="/events" 
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
-                  <Events />
+                  <DashboardLayout><Events /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -71,7 +74,7 @@ const App = () => (
               path="/worship" 
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER', 'MINISTER']}>
-                  <Worship />
+                  <DashboardLayout><Worship /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
@@ -79,7 +82,23 @@ const App = () => (
               path="/announcements" 
               element={
                 <ProtectedRoute>
-                  <Announcements />
+                  <DashboardLayout><Announcements /></DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/reports" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR']}>
+                  <DashboardLayout><Reports /></DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/attendance" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <DashboardLayout><Attendance /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
