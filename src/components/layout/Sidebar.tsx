@@ -16,7 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfiles";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -36,16 +37,14 @@ interface SidebarProps {
 
 export const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
-
-  // Mock user data
-  const user = {
-    name: "Pastor João Silva",
-    email: "pastor@igreja.com",
-    role: "Pastor",
-    avatar: "",
-  };
+  const { user, signOut } = useAuth();
+  const { data: profile } = useProfile();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <aside
@@ -84,15 +83,15 @@ export const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         <div className="p-4 border-b border-border">
           <div className={`flex items-center ${isCollapsed ? "justify-center" : "space-x-3"}`}>
             <Avatar className={isCollapsed ? "h-10 w-10" : "h-12 w-12"}>
-              <AvatarImage src={user.avatar} />
+              <AvatarImage src={profile?.photo_url || ""} />
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {user.name.split(" ").map(n => n[0]).join("")}
+                {profile?.name?.split(" ").map(n => n[0]).join("") || user?.email?.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <div className="flex-1 animate-fade-in">
-                <p className="text-sm font-semibold truncate">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.role}</p>
+                <p className="text-sm font-semibold truncate">{profile?.name || user?.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{profile?.status || "Membro"}</p>
               </div>
             )}
           </div>
@@ -133,6 +132,7 @@ export const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         <div className="p-4 border-t border-border">
           <Button
             variant="ghost"
+            onClick={handleLogout}
             className={`
               w-full text-destructive hover:bg-destructive/10 hover:text-destructive
               ${isCollapsed ? "px-0" : "justify-start"}

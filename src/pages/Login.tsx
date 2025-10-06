@@ -1,30 +1,31 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Church, ArrowLeft, Mail, Lock, Building2, Loader2, AlertCircle } from "lucide-react";
+import { Church, ArrowLeft, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedChurch, setSelectedChurch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{email?: string; password?: string; church?: string}>({});
+  const [errors, setErrors] = useState<{email?: string; password?: string}>({});
   const [generalError, setGeneralError] = useState("");
+  const { signIn, user } = useAuth();
+  const navigate = useNavigate();
 
-  // Mock de igrejas para o seletor
-  const churches = [
-    { id: "1", name: "Igreja Batista Central" },
-    { id: "2", name: "Assembleia de Deus" },
-    { id: "3", name: "Igreja Universal" },
-  ];
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
-    const newErrors: {email?: string; password?: string; church?: string} = {};
+    const newErrors: {email?: string; password?: string} = {};
     
     if (!email) {
       newErrors.email = "Email é obrigatório";
@@ -36,10 +37,6 @@ const Login = () => {
       newErrors.password = "Senha é obrigatória";
     } else if (password.length < 6) {
       newErrors.password = "Senha deve ter no mínimo 6 caracteres";
-    }
-    
-    if (!selectedChurch) {
-      newErrors.church = "Selecione uma igreja";
     }
     
     setErrors(newErrors);
@@ -56,11 +53,26 @@ const Login = () => {
     
     setIsLoading(true);
     
-    // Simulação de login
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          setGeneralError("Email ou senha incorretos");
+        } else {
+          setGeneralError(error.message);
+        }
+      } else {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo de volta ao FaithAlive",
+        });
+      }
+    } catch (error: any) {
+      setGeneralError("Erro ao fazer login. Tente novamente.");
+    } finally {
       setIsLoading(false);
-      // Aqui entraria a lógica real de autenticação
-    }, 2000);
+    }
   };
 
   return (
@@ -95,31 +107,6 @@ const Login = () => {
                   <AlertDescription>{generalError}</AlertDescription>
                 </Alert>
               )}
-
-              {/* Seletor de Igreja */}
-              <div className="space-y-2">
-                <Label htmlFor="church">Igreja</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Select value={selectedChurch} onValueChange={setSelectedChurch}>
-                    <SelectTrigger 
-                      className={`h-11 pl-10 ${errors.church ? 'border-destructive' : ''}`}
-                    >
-                      <SelectValue placeholder="Selecione sua igreja" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {churches.map((church) => (
-                        <SelectItem key={church.id} value={church.id}>
-                          {church.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {errors.church && (
-                  <p className="text-sm text-destructive animate-fade-in">{errors.church}</p>
-                )}
-              </div>
 
               {/* Email */}
               <div className="space-y-2">
