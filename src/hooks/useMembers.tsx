@@ -38,40 +38,45 @@ export const useMembers = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["members", filters],
     queryFn: async () => {
-      let query = supabase
+      // First get profiles
+      let profileQuery = supabase
         .from("profiles")
-        .select(`
-          *,
-          user_roles!inner(role)
-        `, { count: 'exact' });
+        .select('*', { count: 'exact' });
 
       // Apply search filter
       if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-      }
-
-      // Apply role filter
-      if (filters.role && filters.role !== 'all') {
-        const roleUpper = filters.role.toUpperCase() as 'PASTOR' | 'LEADER' | 'MINISTER' | 'MEMBER' | 'VISITOR';
-        query = query.eq('user_roles.role', roleUpper);
+        profileQuery = profileQuery.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
       }
 
       // Apply status filter
       if (filters.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status.toUpperCase());
+        profileQuery = profileQuery.eq('status', filters.status.toUpperCase());
       }
 
       // Apply pagination
       const from = ((filters.page || 1) - 1) * (filters.pageSize || 10);
       const to = from + (filters.pageSize || 10) - 1;
-      query = query.range(from, to);
+      profileQuery = profileQuery.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data: profiles, error: profileError, count } = await profileQuery;
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Get roles for all profiles
+      const profileIds = profiles?.map(p => p.id) || [];
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select('user_id, role')
+        .in('user_id', profileIds);
+
+      // Map roles to profiles
+      const members = (profiles || []).map(profile => ({
+        ...profile,
+        roles: roles?.filter(r => r.user_id === profile.id).map(r => r.role) || []
+      }));
 
       return {
-        members: data as Member[],
+        members: members as Member[],
         total: count || 0,
         page: filters.page || 1,
         pageSize: filters.pageSize || 10,
