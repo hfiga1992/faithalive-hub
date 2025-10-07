@@ -72,6 +72,7 @@ const Members = () => {
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [memberToEdit, setMemberToEdit] = useState<any>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,40 +98,71 @@ const Members = () => {
     }
   };
 
+  const handleEditClick = (member: any) => {
+    setMemberToEdit(member);
+    setFormData({
+      name: member.name,
+      email: member.email,
+      password: "", // Deixar vazio para não alterar senha
+      phone: member.phone || "",
+      role: member.roles?.[0] || "",
+    });
+    setPhotoPreview(member.photo_url || "");
+    setIsAddMemberOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsAddMemberOpen(false);
+    setMemberToEdit(null);
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      role: "",
+    });
+    setPhotoFile(null);
+    setPhotoPreview("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!church?.id) return;
 
     try {
-      let photoUrl = "";
+      let photoUrl = memberToEdit?.photo_url || "";
       
       // Upload photo if selected
       if (photoFile) {
-        // Create a temporary user ID for the photo
-        const tempId = `temp-${Date.now()}`;
-        photoUrl = await uploadPhoto(photoFile, tempId);
+        const userId = memberToEdit?.id || `temp-${Date.now()}`;
+        photoUrl = await uploadPhoto(photoFile, userId);
       }
 
-      createMember({
-        ...formData,
-        church_id: church.id,
-        photo_url: photoUrl,
-      });
+      if (memberToEdit) {
+        // Atualizar membro existente
+        // Nota: a atualização de roles requer uma edge function separada
+        // Por enquanto, atualizamos apenas os dados do perfil
+        const updateData: any = {
+          id: memberToEdit.id,
+          name: formData.name,
+          phone: formData.phone,
+          photo_url: photoUrl,
+        };
 
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        phone: "",
-        role: "",
-      });
-      setPhotoFile(null);
-      setPhotoPreview("");
-      setIsAddMemberOpen(false);
+        updateMember(updateData);
+      } else {
+        // Criar novo membro
+        createMember({
+          ...formData,
+          church_id: church.id,
+          photo_url: photoUrl,
+        });
+      }
+
+      handleCloseDialog();
     } catch (error) {
-      console.error("Error creating member:", error);
+      console.error("Error saving member:", error);
     }
   };
 
@@ -185,9 +217,13 @@ const Members = () => {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Membro</DialogTitle>
+                <DialogTitle>
+                  {memberToEdit ? "Editar Membro" : "Adicionar Novo Membro"}
+                </DialogTitle>
                 <DialogDescription>
-                  Preencha os dados do novo membro da igreja
+                  {memberToEdit 
+                    ? "Atualize os dados do membro" 
+                    : "Preencha os dados do novo membro da igreja"}
                 </DialogDescription>
               </DialogHeader>
 
@@ -239,23 +275,32 @@ const Members = () => {
                     placeholder="email@exemplo.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    required={!memberToEdit}
+                    disabled={!!memberToEdit}
+                    className={memberToEdit ? "bg-muted cursor-not-allowed" : ""}
                   />
+                  {memberToEdit && (
+                    <p className="text-xs text-muted-foreground">
+                      O e-mail não pode ser alterado após o cadastro
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={6}
-                  />
-                </div>
+                {!memberToEdit && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Mínimo 6 caracteres"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                )}
 
                 {/* Phone */}
                 <div className="space-y-2">
@@ -274,9 +319,10 @@ const Members = () => {
                   <Select
                     value={formData.role}
                     onValueChange={(value) => setFormData({ ...formData, role: value })}
-                    required
+                    required={!memberToEdit}
+                    disabled={!!memberToEdit}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={memberToEdit ? "bg-muted cursor-not-allowed" : ""}>
                       <SelectValue placeholder="Selecione o perfil" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover z-50">
@@ -287,23 +333,30 @@ const Members = () => {
                       <SelectItem value="VISITOR">Visitante</SelectItem>
                     </SelectContent>
                   </Select>
+                  {memberToEdit && (
+                    <p className="text-xs text-muted-foreground">
+                      A alteração de perfil requer permissões especiais
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsAddMemberOpen(false)}
-                    disabled={isCreating}
+                    onClick={handleCloseDialog}
+                    disabled={isCreating || isUpdating}
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isCreating}>
-                    {isCreating ? (
+                  <Button type="submit" disabled={isCreating || isUpdating}>
+                    {(isCreating || isUpdating) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Salvando...
                       </>
+                    ) : memberToEdit ? (
+                      "Atualizar Membro"
                     ) : (
                       "Salvar Membro"
                     )}
@@ -443,7 +496,7 @@ const Members = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover z-50">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditClick(member)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
