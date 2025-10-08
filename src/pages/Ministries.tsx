@@ -27,100 +27,10 @@ import {
   Eye,
   UserPlus,
 } from "lucide-react";
-
-// Mock data for ministries
-const mockMinistries = [
-  {
-    id: 1,
-    name: "Louvor",
-    icon: Music,
-    color: "hsl(221, 83%, 53%)", // blue
-    leader: "Ana Silva",
-    members: 12,
-    status: "active",
-    description: "Ministério responsável pelo louvor e adoração",
-  },
-  {
-    id: 2,
-    name: "KIDS",
-    icon: Baby,
-    color: "hsl(142, 71%, 45%)", // green
-    leader: "Carlos Souza",
-    members: 8,
-    status: "active",
-    description: "Ministério infantil",
-  },
-  {
-    id: 3,
-    name: "Financeiro",
-    icon: DollarSign,
-    color: "hsl(45, 93%, 47%)", // golden
-    leader: "Maria Santos",
-    members: 5,
-    status: "active",
-    description: "Gestão financeira da igreja",
-  },
-  {
-    id: 4,
-    name: "Diaconato",
-    icon: HandHeart,
-    color: "hsl(271, 81%, 56%)", // purple
-    leader: "João Oliveira",
-    members: 15,
-    status: "active",
-    description: "Serviço e apoio à congregação",
-  },
-  {
-    id: 5,
-    name: "Intercessão",
-    icon: Sparkles,
-    color: "hsl(330, 81%, 60%)", // pink
-    leader: "Lucia Costa",
-    members: 20,
-    status: "active",
-    description: "Oração e intercessão",
-  },
-  {
-    id: 6,
-    name: "Mídia",
-    icon: Camera,
-    color: "hsl(24, 95%, 53%)", // orange
-    leader: "Pedro Lima",
-    members: 6,
-    status: "active",
-    description: "Produção de conteúdo e mídias sociais",
-  },
-  {
-    id: 7,
-    name: "Áudio Visual",
-    icon: Monitor,
-    color: "hsl(0, 84%, 60%)", // red
-    leader: "Rafael Dias",
-    members: 7,
-    status: "active",
-    description: "Som, iluminação e projeção",
-  },
-  {
-    id: 8,
-    name: "Cronograma",
-    icon: Calendar,
-    color: "hsl(217, 91%, 35%)", // dark blue
-    leader: "Beatriz Rocha",
-    members: 4,
-    status: "active",
-    description: "Organização de escalas e eventos",
-  },
-  {
-    id: 9,
-    name: "Cantina",
-    icon: UtensilsCrossed,
-    color: "hsl(30, 67%, 40%)", // brown
-    leader: null,
-    members: 0,
-    status: "inactive",
-    description: "Serviço de alimentação",
-  },
-];
+import { useMinistries, useCreateMinistry, useUpdateMinistry } from "@/hooks/useMinistries";
+import { useAuth } from "@/hooks/useAuth";
+import { useMembers } from "@/hooks/useMembers";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Mock members data
 const mockMembers = [
@@ -131,29 +41,90 @@ const mockMembers = [
 ];
 
 const Ministries = () => {
+  const { church } = useAuth();
+  const { data: ministries = [], isLoading } = useMinistries();
+  const createMinistry = useCreateMinistry();
+  const updateMinistry = useUpdateMinistry();
+  const { members = [] } = useMembers();
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMinistry, setSelectedMinistry] = useState<typeof mockMinistries[0] | null>(null);
+  const [selectedMinistry, setSelectedMinistry] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  // Novo estado para modal de cadastro
+  const [isAddMinistryOpen, setIsAddMinistryOpen] = useState(false);
+  const [newMinistry, setNewMinistry] = useState({
+    name: "",
+    description: "",
+    leader: "",
+    color: "#0000ff",
+    status: true,
+  });
+  // Estado para dados de edição
+  const [editMinistry, setEditMinistry] = useState({
+    name: "",
+    description: "",
+    leader_id: undefined as string | undefined,
+    color: "#0000ff",
+    status: true,
+  });
 
-  const filteredMinistries = mockMinistries.filter((ministry) => {
+  const filteredMinistries = ministries.filter((ministry) => {
     const matchesFilter =
       filter === "all" ||
-      (filter === "active" && ministry.status === "active") ||
-      (filter === "inactive" && ministry.status === "inactive");
+      (filter === "active" && (ministry.is_active ?? true)) ||
+      (filter === "inactive" && ministry.is_active === false);
     const matchesSearch = ministry.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
-  const handleViewDetails = (ministry: typeof mockMinistries[0]) => {
+  const handleViewDetails = (ministry: any) => {
     setSelectedMinistry(ministry);
     setDetailsOpen(true);
   };
 
-  const handleEdit = (ministry: typeof mockMinistries[0]) => {
+  const handleEdit = (ministry: any) => {
     setSelectedMinistry(ministry);
+    setEditMinistry({
+      name: ministry.name,
+      description: ministry.description || "",
+      leader_id: ministry.leader_id || undefined,
+      color: ministry.color || "#0000ff",
+      status: ministry.is_active ?? true,
+    });
     setEditOpen(true);
+  };
+
+  // Função para atualizar ministério
+  const handleUpdateMinistry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMinistry?.id) return;
+    updateMinistry.mutate({
+      id: selectedMinistry.id,
+      name: editMinistry.name,
+      description: editMinistry.description,
+      color: editMinistry.color,
+      is_active: editMinistry.status,
+      leader_id: editMinistry.leader_id || null,
+    });
+    setEditOpen(false);
+  };
+
+  // Função para adicionar novo ministério
+  const handleAddMinistry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!church?.id) return;
+    createMinistry.mutate({
+      name: newMinistry.name,
+      description: newMinistry.description,
+      color: newMinistry.color,
+      is_active: newMinistry.status,
+      church_id: church.id,
+      leader_id: newMinistry.leader || null,
+      icon: null, // pode customizar depois
+    });
+    setIsAddMinistryOpen(false);
+    setNewMinistry({ name: "", description: "", leader: "", color: "#0000ff", status: true });
   };
 
   return (
@@ -165,10 +136,103 @@ const Ministries = () => {
             <h1 className="text-3xl font-bold tracking-tight">Ministérios</h1>
             <p className="text-muted-foreground">Gerencie os ministérios da sua igreja</p>
           </div>
-          <Button className="w-full md:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Novo Ministério
-          </Button>
+          <Dialog open={isAddMinistryOpen} onOpenChange={setIsAddMinistryOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full md:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Novo Ministério
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background">
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Ministério</DialogTitle>
+                <DialogDescription>Preencha os dados do novo ministério</DialogDescription>
+              </DialogHeader>
+              <form className="space-y-4 mt-4" onSubmit={handleAddMinistry}>
+                <div className="space-y-2">
+                  <Label htmlFor="ministry-name">Nome do Ministério *</Label>
+                  <Input
+                    id="ministry-name"
+                    placeholder="Ex: Louvor, Kids, Mídia..."
+                    value={newMinistry.name}
+                    onChange={e => setNewMinistry({ ...newMinistry, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ministry-description">Descrição</Label>
+                  <Textarea
+                    id="ministry-description"
+                    placeholder="Descreva o propósito do ministério"
+                    value={newMinistry.description}
+                    onChange={e => setNewMinistry({ ...newMinistry, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ministry-leader">Líder</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={newMinistry.leader || ""}
+                      onValueChange={(value) => setNewMinistry({ ...newMinistry, leader: value || "" })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione um líder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {members.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewMinistry({ ...newMinistry, leader: "" })}
+                    >
+                      Limpar
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ministry-color">Cor do Tema</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="ministry-color"
+                      type="color"
+                      value={newMinistry.color}
+                      onChange={e => setNewMinistry({ ...newMinistry, color: e.target.value })}
+                      className="w-20 h-10"
+                    />
+                    <Input
+                      value={newMinistry.color}
+                      onChange={e => setNewMinistry({ ...newMinistry, color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="ministry-status">Status Ativo</Label>
+                  <Switch
+                    id="ministry-status"
+                    checked={newMinistry.status}
+                    onCheckedChange={checked => setNewMinistry({ ...newMinistry, status: checked })}
+                  />
+                </div>
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsAddMinistryOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    Salvar Ministério
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Filters */}
@@ -213,77 +277,81 @@ const Ministries = () => {
 
         {/* Ministries Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredMinistries.map((ministry) => {
-            const Icon = ministry.icon;
-            return (
-              <Card
-                key={ministry.id}
-                className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in"
-              >
-                {/* Colored top bar */}
-                <div
-                  className="h-2 w-full"
-                  style={{ backgroundColor: ministry.color }}
-                />
-
-                <CardHeader className="text-center pb-4">
-                  {/* Icon */}
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Carregando ministérios...</div>
+          ) : filteredMinistries.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">Nenhum ministério encontrado</div>
+          ) : (
+            filteredMinistries.map((ministry) => {
+              const Icon = Music; // Ícone fixo por enquanto
+              return (
+                <Card
+                  key={ministry.id}
+                  className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in"
+                >
+                  {/* Colored top bar */}
                   <div
-                    className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${ministry.color}20` }}
-                  >
-                    <Icon className="h-8 w-8" style={{ color: ministry.color }} />
-                  </div>
-
-                  <CardTitle className="text-xl">{ministry.name}</CardTitle>
-                  {ministry.leader ? (
-                    <CardDescription>Líder: {ministry.leader}</CardDescription>
-                  ) : (
-                    <CardDescription className="text-destructive">Sem líder definido</CardDescription>
-                  )}
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Stats */}
-                  <div className="flex items-center justify-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{ministry.members} membros</span>
+                    className="h-2 w-full"
+                    style={{ backgroundColor: ministry.color || '#0000ff' }}
+                  />
+                  <CardHeader className="text-center pb-4">
+                    {/* Icon */}
+                    <div
+                      className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+                      style={{ backgroundColor: `${ministry.color || '#0000ff'}20` }}
+                    >
+                      <Icon className="h-8 w-8" style={{ color: ministry.color || '#0000ff' }} />
                     </div>
-                    <Badge variant={ministry.status === "active" ? "default" : "secondary"}>
-                      {ministry.status === "active" ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleViewDetails(ministry)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Detalhes
+                    <CardTitle className="text-xl">{ministry.name}</CardTitle>
+                    {/* Exibir líder se disponível */}
+                    <CardDescription>
+                      {ministry.leader_id ? 
+                        `Líder: ${members.find(m => m.id === ministry.leader_id)?.name || 'Carregando...'}` : 
+                        'Sem líder definido'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Stats */}
+                    <div className="flex items-center justify-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>- membros</span>
+                      </div>
+                      <Badge variant={ministry.is_active ? "default" : "secondary"}>
+                        {ministry.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </div>
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleViewDetails(ministry)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Detalhes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleEdit(ministry)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar
+                      </Button>
+                    </div>
+                    <Button variant="secondary" size="sm" className="w-full">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Gerenciar Membros
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleEdit(ministry)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </Button>
-                  </div>
-                  <Button variant="secondary" size="sm" className="w-full">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Gerenciar Membros
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         {/* Details Modal */}
@@ -295,9 +363,9 @@ const Ministries = () => {
                   <div className="flex items-center gap-4">
                     <div
                       className="flex h-12 w-12 items-center justify-center rounded-full"
-                      style={{ backgroundColor: `${selectedMinistry.color}20` }}
+                      style={{ backgroundColor: `${selectedMinistry.color || '#0000ff'}20` }}
                     >
-                      <selectedMinistry.icon className="h-6 w-6" style={{ color: selectedMinistry.color }} />
+                      <Music className="h-6 w-6" style={{ color: selectedMinistry.color || '#0000ff' }} />
                     </div>
                     <div>
                       <DialogTitle className="text-2xl">{selectedMinistry.name}</DialogTitle>
@@ -318,17 +386,20 @@ const Ministries = () => {
                       <div>
                         <Label className="text-muted-foreground">Líder</Label>
                         <p className="text-lg font-medium">
-                          {selectedMinistry.leader || "Não definido"}
+                          {selectedMinistry.leader_id ? 
+                            members.find(m => m.id === selectedMinistry.leader_id)?.name || 'Carregando...' : 
+                            "Não definido"
+                          }
                         </p>
                       </div>
                       <div>
                         <Label className="text-muted-foreground">Total de Membros</Label>
-                        <p className="text-lg font-medium">{selectedMinistry.members}</p>
+                        <p className="text-lg font-medium">-</p>
                       </div>
                       <div>
                         <Label className="text-muted-foreground">Status</Label>
-                        <Badge variant={selectedMinistry.status === "active" ? "default" : "secondary"}>
-                          {selectedMinistry.status === "active" ? "Ativo" : "Inativo"}
+                        <Badge variant={selectedMinistry.is_active ? "default" : "secondary"}>
+                          {selectedMinistry.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </div>
                       <div>
@@ -428,47 +499,93 @@ const Ministries = () => {
                 </DialogHeader>
 
                 <div className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome do Ministério</Label>
-                    <Input id="name" defaultValue={selectedMinistry.name} />
-                  </div>
+                  <form onSubmit={handleUpdateMinistry}>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nome do Ministério</Label>
+                        <Input
+                          id="name"
+                          value={editMinistry.name}
+                          onChange={e => setEditMinistry({ ...editMinistry, name: e.target.value })}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea id="description" defaultValue={selectedMinistry.description} rows={3} />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Descrição</Label>
+                        <Textarea
+                          id="description"
+                          value={editMinistry.description}
+                          onChange={e => setEditMinistry({ ...editMinistry, description: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="leader">Líder</Label>
-                    <Input id="leader" defaultValue={selectedMinistry.leader || ""} />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="leader">Líder</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={editMinistry.leader_id || ""}
+                            onValueChange={(value) => setEditMinistry({ ...editMinistry, leader_id: value || undefined })}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Selecione um líder" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {members.map((member) => (
+                                <SelectItem key={member.id} value={member.id}>
+                                  {member.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditMinistry({ ...editMinistry, leader_id: undefined })}
+                          >
+                            Limpar
+                          </Button>
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="color">Cor do Tema</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="color"
-                        type="color"
-                        defaultValue={selectedMinistry.color}
-                        className="w-20 h-10"
-                      />
-                      <Input defaultValue={selectedMinistry.color} className="flex-1" />
+                      <div className="space-y-2">
+                        <Label htmlFor="color">Cor do Tema</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="color"
+                            type="color"
+                            value={editMinistry.color}
+                            onChange={e => setEditMinistry({ ...editMinistry, color: e.target.value })}
+                            className="w-20 h-10"
+                          />
+                          <Input
+                            value={editMinistry.color}
+                            onChange={e => setEditMinistry({ ...editMinistry, color: e.target.value })}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="status">Status Ativo</Label>
+                        <Switch
+                          id="status"
+                          checked={editMinistry.status}
+                          onCheckedChange={checked => setEditMinistry({ ...editMinistry, status: checked })}
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button type="button" variant="outline" className="flex-1" onClick={() => setEditOpen(false)}>
+                          Cancelar
+                        </Button>
+                        <Button type="submit" className="flex-1" disabled={updateMinistry.isPending}>
+                          {updateMinistry.isPending ? "Salvando..." : "Salvar Alterações"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="status">Status Ativo</Label>
-                    <Switch id="status" defaultChecked={selectedMinistry.status === "active"} />
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button variant="outline" className="flex-1" onClick={() => setEditOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button className="flex-1" onClick={() => setEditOpen(false)}>
-                      Salvar Alterações
-                    </Button>
-                  </div>
+                  </form>
                 </div>
               </>
             )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Music, Plus, Search, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -85,8 +86,8 @@ export default function Worship() {
   ).slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -338,6 +339,6 @@ export default function Worship() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

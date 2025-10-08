@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Megaphone, Plus, Filter, Pin, AlertCircle, Info, Calendar as CalendarIcon, DollarSign, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Card,
   CardContent,
@@ -127,8 +128,8 @@ export default function Announcements() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -384,6 +385,6 @@ export default function Announcements() {
           )}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

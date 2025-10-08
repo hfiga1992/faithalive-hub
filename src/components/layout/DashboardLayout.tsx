@@ -68,10 +68,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div
         className={`
           pt-16 transition-all duration-300 ease-in-out
-          ${isSidebarCollapsed ? "md:pl-20" : "md:pl-64"}
+          pl-[10rem]
         `}
       >
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className=" pl-[0rem] pr-[1rem] py-0">
           {children}
         </main>
       </div>

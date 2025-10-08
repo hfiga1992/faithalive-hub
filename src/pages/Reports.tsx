@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BarChart3, Users, Calendar, TrendingUp, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useChurchStats } from "@/hooks/useChurchStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useMembers } from "@/hooks/useMembers";
@@ -22,8 +23,8 @@ export default function Reports() {
 
   if (!hasRole('PASTOR')) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
+      <DashboardLayout>
+        <div>
           <Card>
             <CardContent className="text-center py-12">
               <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -34,13 +35,13 @@ export default function Reports() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -188,6 +189,6 @@ export default function Reports() {
           </Card>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
