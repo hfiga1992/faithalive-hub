@@ -71,7 +71,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           ${isSidebarCollapsed ? "md:pl-20" : "md:pl-64"}
         `}
       >
-        <main className="p-4">
+        <main className="p-2">
           {children}
         </main>
       </div>
