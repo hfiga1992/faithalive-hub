@@ -94,6 +94,7 @@ export default function Finance() {
     { title: "Categorias", path: "/finance/categories", description: "Organize por categorias" },
     { title: "Contas", path: "/finance/accounts", description: "Contas bancárias e caixas" },
     { title: "Contatos", path: "/finance/contacts", description: "Fornecedores e clientes" },
+    { title: "Centros de Custos", path: "/finance/cost-centers", description: "Gerencie centros de custos" },
   ];
 
   return (

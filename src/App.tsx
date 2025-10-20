@@ -23,6 +23,7 @@ import FinancialTransactions from "./pages/FinancialTransactions";
 import FinancialCategories from "./pages/FinancialCategories";
 import FinancialAccounts from "./pages/FinancialAccounts";
 import FinancialContacts from "./pages/FinancialContacts";
+import CostCenters from "./pages/CostCenters";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -144,6 +145,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
                   <FinancialContacts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance/cost-centers" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <CostCenters />
                 </ProtectedRoute>
               } 
             />
