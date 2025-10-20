@@ -18,6 +18,11 @@ import Worship from "./pages/Worship";
 import Announcements from "./pages/Announcements";
 import Reports from "./pages/Reports";
 import Attendance from "./pages/Attendance";
+import Finance from "./pages/Finance";
+import FinancialTransactions from "./pages/FinancialTransactions";
+import FinancialCategories from "./pages/FinancialCategories";
+import FinancialAccounts from "./pages/FinancialAccounts";
+import FinancialContacts from "./pages/FinancialContacts";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -99,6 +104,46 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
                   <DashboardLayout><Attendance /></DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <Finance />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance/transactions" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <FinancialTransactions />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance/categories" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <FinancialCategories />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance/accounts" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <FinancialAccounts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finance/contacts" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
+                  <FinancialContacts />
                 </ProtectedRoute>
               } 
             />

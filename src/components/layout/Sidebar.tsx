@@ -12,7 +12,8 @@ import {
   Church,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ const menuItems = [
   { icon: Music, label: "Louvor", path: "/worship" },
   { icon: Megaphone, label: "Anúncios", path: "/announcements" },
   { icon: ClipboardCheck, label: "Presença", path: "/attendance" },
+  { icon: DollarSign, label: "Financeiro", path: "/finance" },
   { icon: BarChart3, label: "Relatórios", path: "/reports" },
 ];
 
