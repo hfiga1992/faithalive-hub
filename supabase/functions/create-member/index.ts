@@ -1,5 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+// Input validation schema
+const memberSchema = z.object({
+  email: z.string().email().max(255),
+  password: z.string().min(6).max(128),
+  name: z.string().trim().min(1).max(100),
+  phone: z.string().regex(/^\d{10,11}$/).optional().or(z.literal('')),
+  church_id: z.string().uuid(),
+  role: z.enum(['PASTOR', 'LEADER', 'MINISTER', 'MEMBER', 'VISITOR']),
+  photo_url: z.string().url().max(500).optional().or(z.literal(''))
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,12 +58,17 @@ serve(async (req) => {
       throw new Error('Você não tem permissão para criar membros');
     }
 
-    const { email, password, name, phone, church_id, role, photo_url } = await req.json();
-
-    // Validate required fields
-    if (!email || !password || !name || !church_id || !role) {
-      throw new Error('Campos obrigatórios faltando');
+    // Parse and validate request body
+    let validatedData;
+    try {
+      const body = await req.json();
+      validatedData = memberSchema.parse(body);
+    } catch (error) {
+      console.error('Validation error:', error);
+      throw new Error('Dados de entrada inválidos');
     }
+
+    const { email, password, name, phone, church_id, role, photo_url } = validatedData;
 
     // Validate only 1 PASTOR per church
     if (role === 'PASTOR') {

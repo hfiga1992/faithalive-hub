@@ -214,7 +214,7 @@ export const useMembers = () => {
   const uploadPhoto = async (file: File, userId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-${Math.random()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const filePath = `${userId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -222,11 +222,14 @@ export const useMembers = () => {
 
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage
+    // Use signed URL with 1 hour expiry for better security
+    const { data, error: urlError } = await supabase.storage
       .from('avatars')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600);
 
-    return data.publicUrl;
+    if (urlError) throw urlError;
+
+    return data.signedUrl;
   };
 
   return {
