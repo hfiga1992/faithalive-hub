@@ -112,7 +112,7 @@ const App = () => (
               path="/finance" 
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
-                  <Finance />
+                  <DashboardLayout><Finance /></DashboardLayout>
                 </ProtectedRoute>
               } 
             />
