@@ -68,7 +68,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div
         className={`
           pt-16 transition-all duration-300 ease-in-out
-          ${isSidebarCollapsed ? "md:pl-20" : "md:pl-64"}
+          ${isSidebarCollapsed ? "md:pl-[72px]" : "md:pl-[257px]"}
         `}
       >
         <main>
