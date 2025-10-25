@@ -75,36 +75,47 @@ export default function Register() {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep3()) return;
-    setIsLoading(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('register-new-church', {
-        body: {
-          email: formData.pastorEmail,
-          password: formData.pastorPassword,
-          fullName: formData.pastorName,
-          churchName: formData.churchName,
-          address: formData.churchAddress,
-          phone: formData.churchPhone,
-          planType: 'freemium' // Plano padrão
-        }
-      });
+  if (!validateStep3()) return;
+  setIsLoading(true);
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('register-new-church', {
+      body: {
+        email: formData.pastorEmail,
+        password: formData.pastorPassword,
+        fullName: formData.pastorName,
+        churchName: formData.churchName,
+        address: formData.churchAddress,
+        phone: formData.churchPhone,
+        planType: 'freemium' // Plano padrão
+      }
+    });
 
-      if (error) throw error;
-
+    if (error) {
+      // Verifica se o erro é de e-mail duplicado
+      if (error.message.includes("Este e-mail já está cadastrado")) {
+        setErrors(prev => ({ ...prev, pastorEmail: "Este e-mail já está em uso." }));
+        setCurrentStep(2); // Volta para a etapa do formulário de e-mail
+        toast.error("E-mail já cadastrado", {
+          description: "Por favor, use um e-mail diferente ou faça login se você já possui uma conta.",
+        });
+      } else {
+        throw error;
+      }
+    } else {
       setIsSuccess(true);
       toast.success("Igreja cadastrada com sucesso!", {
         description: "Verifique seu email para confirmar o cadastro.",
       });
-    } catch (error: any) {
-      console.error("Error registering church:", error);
-      toast.error("Erro ao cadastrar", {
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error: any) {
+    console.error("Error registering church:", error);
+    toast.error("Erro ao cadastrar", {
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (isSuccess) {
     return (
