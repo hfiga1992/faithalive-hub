@@ -91,31 +91,7 @@ serve(async (req) => {
 
     console.log('Starting church registration for:', email);
 
-    // 1. Check if user already exists
-    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('Error checking existing users:', listError);
-      throw new Error(`Error checking user: ${listError.message}`);
-    }
-
-    const userExists = existingUsers.users.some(user => user.email === email);
-    
-    if (userExists) {
-      console.log('User already exists:', email);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: "Este e-mail já está cadastrado. Por favor, use um e-mail diferente ou faça login." 
-        }),
-        { 
-          status: 409, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
-    }
-
-    // 2. Create user in authentication
+    // 1. Create user in authentication - will fail if email already exists
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -125,6 +101,19 @@ serve(async (req) => {
 
     if (authError) {
       console.error('Auth error:', authError);
+      // Handle specific case where user already exists
+      if (authError.message.includes('already been registered') || authError.message.includes('already exists')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: "Este e-mail já está cadastrado. Por favor, use um e-mail diferente ou faça login." 
+          }),
+          { 
+            status: 409, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          }
+        );
+      }
       throw new Error(`Authentication error: ${authError.message}`);
     }
 
