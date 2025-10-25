@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "./use-toast";
 import { useEffect } from "react";
+import { logQueryError } from "@/lib/queryConfig";
 
 export interface Announcement {
   id: string;
@@ -32,30 +33,37 @@ export const useAnnouncements = (filters: AnnouncementFilters = {}) => {
   const { user, church } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: announcements, isLoading, error } = useQuery({
+  const announcementsQuery = useQuery({
     queryKey: ["announcements", church?.id, filters],
     queryFn: async () => {
-      let query = supabase
-        .from("announcements")
-        .select("*")
-        .order("is_pinned", { ascending: false })
-        .order("publish_at", { ascending: false });
+      try {
+        let query = supabase
+          .from("announcements")
+          .select("*")
+          .order("is_pinned", { ascending: false })
+          .order("publish_at", { ascending: false });
 
-      if (filters.category && filters.category !== 'all') {
-        query = query.eq("category", filters.category);
+        if (filters.category && filters.category !== 'all') {
+          query = query.eq("category", filters.category);
+        }
+
+        if (filters.ministry_id && filters.ministry_id !== 'all') {
+          query = query.eq("ministry_id", filters.ministry_id);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data as any[];
+      } catch (error: any) {
+        logQueryError('useAnnouncements', error);
+        throw error;
       }
-
-      if (filters.ministry_id && filters.ministry_id !== 'all') {
-        query = query.eq("ministry_id", filters.ministry_id);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as any[];
     },
     enabled: !!user && !!church,
   });
+
+  const { data: announcements, isLoading, error, isError, refetch } = announcementsQuery;
 
   // Setup realtime subscription
   useEffect(() => {
@@ -188,7 +196,9 @@ export const useAnnouncements = (filters: AnnouncementFilters = {}) => {
   return {
     announcements: announcements || [],
     isLoading,
+    isError,
     error,
+    refetch,
     createAnnouncement: createAnnouncement.mutate,
     updateAnnouncement: updateAnnouncement.mutate,
     deleteAnnouncement: deleteAnnouncement.mutate,

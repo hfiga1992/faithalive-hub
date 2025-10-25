@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logQueryError } from "@/lib/queryConfig";
+import { toast } from "./use-toast";
 
 export interface Ministry {
   id: string;
@@ -15,18 +17,30 @@ export interface Ministry {
 }
 
 export const useMinistries = () => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["ministries"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ministries")
-        .select("*")
-        .order("name");
+      try {
+        const { data, error } = await supabase
+          .from("ministries")
+          .select("*")
+          .order("name");
 
-      if (error) throw error;
-      return data as Ministry[];
+        if (error) throw error;
+        return data as Ministry[];
+      } catch (error: any) {
+        logQueryError('useMinistries', error);
+        throw error;
+      }
     },
   });
+
+  return {
+    ...query,
+    ministries: query.data || [],
+    isError: query.isError,
+    refetch: query.refetch,
+  };
 };
 
 export const useCreateMinistry = () => {
@@ -34,17 +48,33 @@ export const useCreateMinistry = () => {
 
   return useMutation({
     mutationFn: async (ministry: Omit<Ministry, "id" | "created_at" | "updated_at">) => {
-      const { data, error } = await supabase
-        .from("ministries")
-        .insert(ministry)
-        .select()
-        .single();
+      try {
+        const { data, error} = await supabase
+          .from("ministries")
+          .insert(ministry)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (error: any) {
+        logQueryError('useCreateMinistry', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministries"] });
+      toast({
+        title: "Ministério criado!",
+        description: "O ministério foi adicionado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar ministério",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 };
@@ -54,18 +84,34 @@ export const useUpdateMinistry = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Ministry> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("ministries")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("ministries")
+          .update(updates)
+          .eq("id", id)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (error: any) {
+        logQueryError('useUpdateMinistry', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministries"] });
+      toast({
+        title: "Ministério atualizado!",
+        description: "As alterações foram salvas com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar ministério",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 };

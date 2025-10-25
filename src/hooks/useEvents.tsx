@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "./use-toast";
+import { logQueryError } from "@/lib/queryConfig";
 
 export interface Event {
   id: string;
@@ -28,57 +29,69 @@ export const useEvents = (filters: EventFilters = {}) => {
   const queryClient = useQueryClient();
 
   // Fetch events
-  const { data: events, isLoading, error } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: ["events", filters],
     queryFn: async () => {
-      let query = supabase
-        .from("events")
-        .select("*")
-        .order("event_date", { ascending: true });
+      try {
+        let query = supabase
+          .from("events")
+          .select("*")
+          .order("event_date", { ascending: true });
 
-      // Apply filters
-      if (filters.month && filters.year) {
-        const startDate = new Date(filters.year, filters.month - 1, 1);
-        const endDate = new Date(filters.year, filters.month, 0, 23, 59, 59);
-        query = query
-          .gte('event_date', startDate.toISOString())
-          .lte('event_date', endDate.toISOString());
+        // Apply filters
+        if (filters.month && filters.year) {
+          const startDate = new Date(filters.year, filters.month - 1, 1);
+          const endDate = new Date(filters.year, filters.month, 0, 23, 59, 59);
+          query = query
+            .gte('event_date', startDate.toISOString())
+            .lte('event_date', endDate.toISOString());
+        }
+
+        if (filters.type && filters.type !== 'all') {
+          query = query.eq('event_type', filters.type);
+        }
+
+        if (filters.status && filters.status !== 'all') {
+          query = query.eq('status', filters.status);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data as Event[];
+      } catch (error: any) {
+        logQueryError('useEvents', error);
+        throw error;
       }
-
-      if (filters.type && filters.type !== 'all') {
-        query = query.eq('event_type', filters.type);
-      }
-
-      if (filters.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Event[];
     },
     enabled: !!user,
   });
 
+  const { data: events, isLoading, error, refetch, isError } = eventsQuery;
+
   // Create event
   const createEvent = useMutation({
     mutationFn: async (eventData: Omit<Event, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
-      if (!hasAnyRole(['PASTOR', 'LEADER'])) {
-        throw new Error("Você não tem permissão para criar eventos");
+      try {
+        if (!hasAnyRole(['PASTOR', 'LEADER'])) {
+          throw new Error("Você não tem permissão para criar eventos");
+        }
+
+        const { data, error } = await supabase
+          .from("events")
+          .insert({
+            ...eventData,
+            created_by: user?.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error: any) {
+        logQueryError('createEvent', error);
+        throw error;
       }
-
-      const { data, error } = await supabase
-        .from("events")
-        .insert({
-          ...eventData,
-          created_by: user?.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -162,7 +175,9 @@ export const useEvents = (filters: EventFilters = {}) => {
   return {
     events: events || [],
     isLoading,
+    isError,
     error,
+    refetch,
     createEvent: createEvent.mutate,
     updateEvent: updateEvent.mutate,
     deleteEvent: deleteEvent.mutate,
