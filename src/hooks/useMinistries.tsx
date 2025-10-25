@@ -115,3 +115,37 @@ export const useUpdateMinistry = () => {
     },
   });
 };
+
+export const useDeleteMinistry = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const { error } = await supabase
+          .from("ministries")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+      } catch (error: any) {
+        logQueryError('useDeleteMinistry', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministries"] });
+      toast({
+        title: "Ministério excluído!",
+        description: "O ministério foi removido com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir ministério",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
