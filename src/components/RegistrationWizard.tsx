@@ -11,18 +11,19 @@ import { Progress } from '@/components/ui/progress';
 import { useChurchRegistration } from '@/hooks/useChurchRegistration';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChurchRegistrationData } from '@/hooks/useChurchRegistration';
 
 const registrationSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
   fullName: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   churchName: z.string().min(3, 'Nome da igreja deve ter pelo menos 3 caracteres'),
-  cnpj: z.string().optional(),
   address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
   phone: z.string().min(10, 'Telefone inválido'),
-  churchType: z.string().min(1, 'Selecione um tipo de igreja'),
-  churchSize: z.string().min(1, 'Selecione o tamanho da igreja'),
-  planType: z.string().min(1, 'Selecione um plano')
+  planType: z.string().default('freemium'),
+  cnpj: z.string().optional(),
+  churchType: z.string().optional(),
+  churchSize: z.string().optional()
 });
 
 type RegistrationData = z.infer<typeof registrationSchema>;
@@ -50,7 +51,7 @@ export function RegistrationWizard() {
   };
 
   const onSubmit = (data: RegistrationData) => {
-    registerChurch(data, {
+    registerChurch(data as ChurchRegistrationData, {
       onSuccess: () => {
         setTimeout(() => navigate('/dashboard'), 2000);
       }
@@ -137,6 +138,7 @@ export function RegistrationWizard() {
               </div>
             )}
             <div className="flex gap-2 justify-between pt-6">
+              <Button type="button" onClick={handleBack} variant="outline" disabled={step === 1}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
               </Button>
               {step < 3 ? (

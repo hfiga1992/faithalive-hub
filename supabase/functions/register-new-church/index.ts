@@ -91,7 +91,31 @@ serve(async (req) => {
 
     console.log('Starting church registration for:', email);
 
-    // 1. Create user in authentication
+    // 1. Check if user already exists
+    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('Error checking existing users:', listError);
+      throw new Error(`Error checking user: ${listError.message}`);
+    }
+
+    const userExists = existingUsers.users.some(user => user.email === email);
+    
+    if (userExists) {
+      console.log('User already exists:', email);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: "Este e-mail já está cadastrado. Por favor, use um e-mail diferente ou faça login." 
+        }),
+        { 
+          status: 409, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    // 2. Create user in authentication
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -109,7 +133,7 @@ serve(async (req) => {
 
     console.log('User created:', userId);
 
-    // 2. Create the church
+    // 3. Create the church
     const { data: churchData, error: churchError } = await supabaseAdmin
       .from('churches')
       .insert({
@@ -134,7 +158,7 @@ serve(async (req) => {
     const churchId = churchData.id;
     console.log('Church created:', churchId);
 
-    // 3. Create user profile and associate with church
+    // 4. Create user profile and associate with church
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
@@ -151,7 +175,7 @@ serve(async (req) => {
 
     console.log('Profile created for user:', userId);
 
-    // 4. Assign PASTOR role
+    // 5. Assign PASTOR role
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
@@ -166,7 +190,7 @@ serve(async (req) => {
 
     console.log('PASTOR role assigned to user:', userId);
 
-    // 5. Create church plan
+    // 6. Create church plan
     const planConfig: Record<string, { max_leaders: number; max_members: number; features: string[] }> = {
       freemium: { max_leaders: 1, max_members: 100, features: ['basic_dashboard', 'member_management'] },
       premium: { max_leaders: 5, max_members: 500, features: ['basic_dashboard', 'member_management', 'financial_module', 'events'] },
@@ -193,7 +217,7 @@ serve(async (req) => {
 
     console.log('Church plan created:', planType);
 
-    // 6. Create predefined ministries
+    // 7. Create predefined ministries
     const ministriesToInsert = PREDEFINED_MINISTRIES.map(m => ({
       ...m,
       church_id: churchId,
@@ -211,7 +235,7 @@ serve(async (req) => {
 
     console.log('Predefined ministries created');
 
-    // 7. Create onboarding record
+    // 8. Create onboarding record
     const { error: onboardingError } = await supabaseAdmin
       .from('church_onboarding')
       .insert({
