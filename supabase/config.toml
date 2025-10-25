@@ -1,1 +1,4 @@
 project_id = "xcczxaxicznnzrrlhyqt"
+
+[functions.register-new-church]
+verify_jwt = false
