@@ -20,6 +20,7 @@ import FinancialCategories from "./pages/FinancialCategories";
 import FinancialAccounts from "./pages/FinancialAccounts";
 import FinancialContacts from "./pages/FinancialContacts";
 import CostCenters from "./pages/CostCenters";
+import MediaSettings from "./pages/MediaSettings";
 import AccessDenied from "./pages/AccessDenied";
 import NotFound from "./pages/NotFound";
 
@@ -145,6 +146,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['PASTOR', 'LEADER']}>
                   <CostCenters />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/media/settings" 
+              element={
+                <ProtectedRoute allowedRoles={['PASTOR']}>
+                  <MediaSettings />
                 </ProtectedRoute>
               } 
             />

@@ -569,6 +569,53 @@ export type Database = {
           },
         ]
       }
+      media_settings: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          error_message: string | null
+          google_drive_credentials: Json
+          google_drive_email: string | null
+          google_drive_folder_id: string
+          id: string
+          is_connected: boolean | null
+          last_sync: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          error_message?: string | null
+          google_drive_credentials: Json
+          google_drive_email?: string | null
+          google_drive_folder_id: string
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          google_drive_credentials?: Json
+          google_drive_email?: string | null
+          google_drive_folder_id?: string
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_settings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           church_id: string | null
@@ -988,10 +1035,7 @@ export type Database = {
           conflict_role: string
         }[]
       }
-      get_user_church_id: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_church_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
