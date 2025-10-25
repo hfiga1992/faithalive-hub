@@ -149,6 +149,97 @@ export type Database = {
           },
         ]
       }
+      church_onboarding: {
+        Row: {
+          church_id: string
+          completed_at: string | null
+          created_at: string | null
+          first_leader_added: boolean | null
+          id: string
+          ministries_customized: boolean | null
+          step: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          first_leader_added?: boolean | null
+          id?: string
+          ministries_customized?: boolean | null
+          step?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          first_leader_added?: boolean | null
+          id?: string
+          ministries_customized?: boolean | null
+          step?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_onboarding_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_plans: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          expires_at: string | null
+          features: Json | null
+          id: string
+          max_leaders: number | null
+          max_members: number | null
+          plan_type: string
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          max_leaders?: number | null
+          max_members?: number | null
+          plan_type: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          features?: Json | null
+          id?: string
+          max_leaders?: number | null
+          max_members?: number | null
+          plan_type?: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_plans_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_stats: {
         Row: {
           active_members: number | null
@@ -565,6 +656,60 @@ export type Database = {
             columns: ["parent_transaction_id"]
             isOneToOne: false
             referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          church_id: string
+          created_at: string | null
+          created_by: string
+          email: string
+          expires_at: string | null
+          id: string
+          is_used: boolean | null
+          role: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string | null
+          created_by: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          role: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string | null
+          created_by?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          role?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
