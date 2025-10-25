@@ -622,8 +622,10 @@ export type Database = {
           color: string | null
           created_at: string | null
           description: string | null
+          features: Json | null
           icon: string | null
           id: string
+          internal_id: string | null
           is_active: boolean | null
           leader_id: string | null
           name: string
@@ -634,8 +636,10 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           description?: string | null
+          features?: Json | null
           icon?: string | null
           id?: string
+          internal_id?: string | null
           is_active?: boolean | null
           leader_id?: string | null
           name: string
@@ -646,8 +650,10 @@ export type Database = {
           color?: string | null
           created_at?: string | null
           description?: string | null
+          features?: Json | null
           icon?: string | null
           id?: string
+          internal_id?: string | null
           is_active?: boolean | null
           leader_id?: string | null
           name?: string
